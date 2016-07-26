@@ -388,12 +388,15 @@ public class HomeScreen extends Activity {
                         //Stopped after Testing
 
 
-                        File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained").listFiles();
+                        /*File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained").listFiles();
                         for(File f: trainedFiles)
                         {
                             Log.v("Testing", ""+f.getAbsolutePath());
                             FastDtwTest.DTW(f.getAbsolutePath(),dir.getAbsolutePath()+ File.separator+filename,true);
-                        }
+                        }*/
+
+                        NewGesture newGesture = new NewGesture();
+                        newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
                         //Call DTW
                     }
 

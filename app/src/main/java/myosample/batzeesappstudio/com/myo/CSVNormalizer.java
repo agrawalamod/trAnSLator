@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -57,7 +58,7 @@ public class CSVNormalizer {
                 yaw.add(Double.parseDouble(RowData[4]));
                 pitch.add(Double.parseDouble(RowData[5]));
                 roll.add(Double.parseDouble(RowData[6]));
-                pose.add(RowData[7]);
+                //pose.add(RowData[7]);
 
             }
         }
@@ -171,5 +172,44 @@ public class CSVNormalizer {
     }
     double evaluateCost(double first, double second){
         return Math.abs(first-second)*Math.abs(first-second);
+    }
+
+    public ArrayList<StatParameters> getFeatures(){
+        ArrayList<StatParameters> features=new ArrayList<StatParameters>();
+        features.add(calculateFeatures(x));
+        features.add(calculateFeatures(y));
+        features.add(calculateFeatures(z));
+        features.add(calculateFeatures(w));
+        features.add(calculateFeatures(roll));
+        features.add(calculateFeatures(pitch));
+        features.add(calculateFeatures(yaw));
+        return features;
+    }
+    public StatParameters calculateFeatures(ArrayList<Double> data){
+        StatParameters param=new StatParameters();
+        double sum = 0;
+        if(!data.isEmpty()) {
+            int counter=0;
+            double mean=0;
+            for (Double d : data) {
+                mean=mean*counter+d;
+                counter++;
+                mean/=counter;
+            }
+            param.setMean(mean);
+            sum=0;
+            for(Double d : data){
+                double dataVal=d.doubleValue();
+                sum+=(dataVal -mean)*(dataVal-mean);
+            }
+            double stdDev=Math.sqrt(sum/data.size());
+            param.setStdDev(stdDev);
+            double minVal = Collections.min(data);
+            double maxVal = Collections.max(data);
+            double diffPeak=maxVal-minVal;
+            param.setPeakDiff(diffPeak);
+
+        }
+        return param;
     }
 }
