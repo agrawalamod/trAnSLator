@@ -5,14 +5,18 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.thalmic.myo.AbstractDeviceListener;
 import com.thalmic.myo.Arm;
@@ -25,25 +29,35 @@ import com.thalmic.myo.XDirection;
 import com.thalmic.myo.scanner.ScanActivity;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import com.dtw.FastDtwTest;
 
-public class HelloWorldActivity extends Activity {
+public class HomeScreen extends Activity {
 
-    private TextView mLockStateView;
+
     private TextView mTextView;
+    private Button start;
+    private ToggleButton switchMode;
+    private EditText gestureName;
+    private EditText gestureWord;
+    private TextView state;
     State currState;
     ArrayList<String> bufferedData;
     ArrayList<String> writeBuffer;
     int count =0;
     File dir;
     String filename;
-    String android_id;
+
+    boolean isRecording = false;
+    boolean isConnected = false;
 
     // Classes that inherit from AbstractDeviceListener can be used to receive events from Myo devices.
     // If you do not override an event, the default behavior is to do nothing.
@@ -54,6 +68,7 @@ public class HelloWorldActivity extends Activity {
         public void onConnect(Myo myo, long timestamp) {
             // Set the text color of the text view to cyan when a Myo connects.
             Log.v("MainActivity", "Myo Connected");
+            isConnected = true;
 
             mTextView.setTextColor(Color.CYAN);
         }
@@ -62,6 +77,7 @@ public class HelloWorldActivity extends Activity {
         @Override
         public void onDisconnect(Myo myo, long timestamp) {
             // Set the text color of the text view to red when a Myo disconnects.
+            isConnected = false;
             Log.v("MainActivity", "Myo Diconnected");
             mTextView.setTextColor(Color.RED);
         }
@@ -88,7 +104,7 @@ public class HelloWorldActivity extends Activity {
         @Override
         public void onUnlock(Myo myo, long timestamp) {
             Log.v("MainActivity", "Myo unlocked");
-            mLockStateView.setText(R.string.unlocked);
+
         }
 
         // onLock() is called whenever a synced Myo has been locked. Under the standard locking
@@ -96,7 +112,7 @@ public class HelloWorldActivity extends Activity {
         @Override
         public void onLock(Myo myo, long timestamp) {
             Log.v("MainActivity", "Myo locked");
-            mLockStateView.setText(R.string.locked);
+
         }
 
         // onOrientationData() is called whenever a Myo provides its current orientation,
@@ -117,38 +133,38 @@ public class HelloWorldActivity extends Activity {
                 roll *= -1;
                 pitch *= -1;
             }
+            if(isRecording == true) {
 
-            currState.roll = roll;
-            currState.pitch = pitch;
-            currState.yaw = yaw;
-            currState.x = x;
-            currState.y = y;
-            currState.z = z;
-            currState.w = w;
+                currState.roll = roll;
+                currState.pitch = pitch;
+                currState.yaw = yaw;
+                currState.x = x;
+                currState.y = y;
+                currState.z = z;
+                currState.w = w;
 
-            String data= currState.x + ", " + currState.y + "," + currState.z + "," + currState.w+ "," + currState.roll+ "," + currState.pitch+ "," + currState.yaw+ "," + currState.pose;
-            if(count == 1000)
-            {
-                count =0;
-                Log.v("SensorService", "5000 lines reached");
-                writeBuffer = new ArrayList<String>(bufferedData);
-                bufferedData.clear();
-                new WriteFile().execute();
+                String data = currState.x + ", " + currState.y + "," + currState.z + "," + currState.w + "," + currState.roll + "," + currState.pitch + "," + currState.yaw + "," + currState.pose;
+
+                if (count == 100) {
+                    count = 0;
+                    Log.v("SensorService", "100 lines reached");
+                    writeBuffer = new ArrayList<String>(bufferedData);
+                    bufferedData.clear();
+                    new WriteFile().execute();
 
 
+                } else {
+                    bufferedData.add(data);
+
+                }
+                count++;
             }
-            else
-            {
-                bufferedData.add(data);
-
-            }
-            count++;
 
 
             // Next, we apply a rotation to the text view using the roll, pitch, and yaw.
-            mTextView.setRotation(roll);
-            mTextView.setRotationX(pitch);
-            mTextView.setRotationY(yaw);
+            //mTextView.setRotation(roll);
+            //mTextView.setRotationX(pitch);
+            //mTextView.setRotationY(yaw);
 
         }
 
@@ -180,18 +196,23 @@ public class HelloWorldActivity extends Activity {
                 case FIST:
                     mTextView.setText(getString(R.string.pose_fist));
                     currState.pose = "Fist";
+                    Log.v("MainActivity", "Fist");
+
                     break;
                 case WAVE_IN:
                     mTextView.setText(getString(R.string.pose_wavein));
                     currState.pose = "WaveIn";
+                    Log.v("MainActivity", "WaveIn");
                     break;
                 case WAVE_OUT:
                     mTextView.setText(getString(R.string.pose_waveout));
                     currState.pose = "WaveOut";
+                    Log.v("MainActivity", "Wave out");
                     break;
                 case FINGERS_SPREAD:
                     mTextView.setText(getString(R.string.pose_fingersspread));
                     currState.pose = "FingersSpread";
+                    Log.v("MainActivity", "Fingers Spread");
                     break;
             }
 
@@ -214,13 +235,173 @@ public class HelloWorldActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_hello_world);
+        setContentView(R.layout.activity_homescreen);
+
 
         currState = State.getInstance();
         bufferedData = new ArrayList<String>();
-
-        mLockStateView = (TextView) findViewById(R.id.lock_state);
         mTextView = (TextView) findViewById(R.id.text);
+        start = (Button) findViewById(R.id.start);
+        switchMode = (ToggleButton) findViewById(R.id.switchMode);
+        gestureName = (EditText) findViewById(R.id.gestureName);
+
+        gestureWord = (EditText) findViewById(R.id.gestureWord);
+        isRecording = false;
+        Log.v("OnCreate Switch", ""+switchMode.isChecked());
+
+        File root = android.os.Environment.getExternalStorageDirectory();
+        dir = new File (root.getAbsolutePath() + File.separator + "MYO");
+        if(!dir.exists())
+        {
+            dir.mkdirs();
+        }
+        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+        if(!dir.exists())
+        {
+            dir.mkdirs();
+        }
+        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained");
+        if(!dir.exists())
+        {
+            dir.mkdirs();
+        }
+        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+        if(!dir.exists())
+        {
+            dir.mkdirs();
+        }
+        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+
+
+
+        switchMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked)
+                {
+                    //Testing Mode
+                    switchMode.setText("Test");
+                    //isTrain = false;
+
+                    gestureName.setVisibility(View.INVISIBLE);
+                    gestureWord.setVisibility(View.INVISIBLE);
+                    File root = android.os.Environment.getExternalStorageDirectory();
+                    dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+
+                }
+                else
+                {
+                    //Training Mode
+                    switchMode.setText("Train");
+                    //isTrain = true;
+
+                    gestureName.setVisibility(View.VISIBLE);
+                    gestureWord.setVisibility(View.VISIBLE);
+                    File root = android.os.Environment.getExternalStorageDirectory();
+                    dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+                }
+                Log.v("Switch", Boolean.toString(isChecked));
+            }
+        });
+
+        start.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                if(isRecording == false)
+                {
+                    //Start Recording
+                    if(!switchMode.isChecked())
+                    {
+                        //Start Recording in Training Mode
+
+                        String gesture = gestureName.getText().toString();
+                        String word = gestureWord.getText().toString();
+                        filename = "train" + "_" + gesture + word + "_" + getFileName();
+
+                    }
+                    else
+                    {
+                        //Start Recording in Test Mode
+                        filename = "test_" + getFileName();
+
+                    }
+                    isRecording = true;
+                    start.setText("Stop");
+                    Log.v("Data Logging", "Started Recording");
+                }
+                else
+                {
+                    //Stop Recording
+                    isRecording = false;
+                    start.setText("Start");
+                    Log.v("Logging Data", "Stopped Recording");
+
+
+                    if(!switchMode.isChecked())
+                    {
+                        //Stopped after Training
+                        Log.v("Data Logging", "Stopped after training");
+                        File root = android.os.Environment.getExternalStorageDirectory();
+                        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+                        File lastModified = lastFileModified(dir.getAbsolutePath());
+
+
+                        // Take average
+                        CSVNormalizer csv = new CSVNormalizer();
+                        try {
+                            csv.readCSV(lastModified);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        csv.normalize();
+                        String filename = lastModified.getName();
+                        Log.v("Last Modified", filename);
+                        File newDir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained");
+                        csv.writeData(newDir.getAbsolutePath(),filename);
+
+                        Log.v("Training", "Trained");
+
+                    }
+                    else
+                    {
+
+                        Log.v("Data Logging", "Stopped after testing");
+                        File root = android.os.Environment.getExternalStorageDirectory();
+                        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+
+                        // Take average
+                        File lastModified = lastFileModified(dir.getAbsolutePath());
+
+                        CSVNormalizer csv = new CSVNormalizer();
+                        try {
+                            csv.readCSV(lastModified);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        csv.normalize();
+                        String filename = lastModified.getName();
+                        dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+                        truncateSDFile(dir.getAbsolutePath(),filename);
+                        csv.writeData(dir.getAbsolutePath(),filename);
+
+
+
+
+                        //Stopped after Testing
+
+
+                        File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained").listFiles();
+                        for(File f: trainedFiles)
+                        {
+                            Log.v("Testing", ""+f.getAbsolutePath());
+                            FastDtwTest.DTW(f.getAbsolutePath(),dir.getAbsolutePath()+ File.separator+filename,true);
+                        }
+                        //Call DTW
+                    }
+
+                }
+
+            }
+
+        });
 
         // First, we initialize the Hub singleton with an application identifier.
         Hub hub = Hub.getInstance();
@@ -240,7 +421,8 @@ public class HelloWorldActivity extends Activity {
         hub.addListener(mListener);
         Log.v("Myo", "Listener added");
         setLockPolicy();
-        onScanActionSelected();
+
+
 
     }
     private void setLockPolicy() {
@@ -249,24 +431,43 @@ public class HelloWorldActivity extends Activity {
     protected void onResume()
     {
         super.onResume();
-        File root = android.os.Environment.getExternalStorageDirectory();
-        dir = new File (root.getAbsolutePath() + File.separator + "MYO");
-        if(!dir.exists())
+
+
+        if(switchMode.isChecked())
         {
-            dir.mkdirs();
+            //Test Mode
+
+            switchMode.setText("Test");
+            //isTrain = false;
+
+            gestureName.setVisibility(View.INVISIBLE);
+            gestureWord.setVisibility(View.INVISIBLE);
+            File root = android.os.Environment.getExternalStorageDirectory();
+            dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+
         }
-        filename = getFileName();
-        String header = "x, y, z, w, roll, pitch, yaw, pose";
-        writeToSDFile(header);
+        else
+        {
+            //Train Mode
+            switchMode.setText("Train");
+            //isTrain = true;
+
+            gestureName.setVisibility(View.VISIBLE);
+            gestureWord.setVisibility(View.VISIBLE);
+            File root = android.os.Environment.getExternalStorageDirectory();
+            dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+        }
+        if(isConnected== false) {
+            onScanActionSelected();
+        }
+
 
     }
     public String getFileName() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd_MM_yyyy_HH_mm_ss");
         String currentDateandTime = sdf.format(new Date());
-        android_id = Settings.Secure.getString(getApplicationContext().getContentResolver(),
-                Settings.Secure.ANDROID_ID);
-        String filename = android_id + "_" + currentDateandTime + ".csv";
-
+        //android_id = Settings.Secure.getString(getApplicationContext().getContentResolver(),Settings.Secure.ANDROID_ID);
+        String filename = currentDateandTime + ".csv";
         return filename;
     }
 
@@ -348,6 +549,7 @@ public class HelloWorldActivity extends Activity {
     private void writeToSDFile(){
 
         Log.v("SensorService", "Size of write buffer: " + writeBuffer.size());
+        Log.v("SensorService", "Writing to file" + dir +"/"+ filename);
 
 
         File file = new File(dir + File.separator + filename);
@@ -367,6 +569,36 @@ public class HelloWorldActivity extends Activity {
             osw.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+    }
+
+    public File lastFileModified(String dir) {
+        File fl = new File(dir);
+        File[] files = fl.listFiles(new FileFilter() {
+            public boolean accept(File file) {
+                return file.isFile();
+            }
+        });
+        long lastMod = Long.MIN_VALUE;
+        File choice = null;
+        for (File file : files) {
+            if (file.lastModified() > lastMod) {
+                choice = file;
+                lastMod = file.lastModified();
+            }
+        }
+        return choice;
+    }
+    private void truncateSDFile(String dir, String filename) {
+
+        String filepath = dir + File.separator + filename;
+        try {
+            PrintWriter pw = new PrintWriter(filepath);
+            pw.close();
+            Log.v("Monitor", "Sensor file Truncated!");
+        } catch (IOException e) {
+            Log.e("Exception", "File write failed: " + e.toString());
         }
 
     }

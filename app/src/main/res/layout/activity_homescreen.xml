@@ -1,0 +1,62 @@
+<RelativeLayout android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_gravity="left|top"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+
+    <TextView
+        android:id="@+id/text"
+        android:text="@string/hello_world"
+        android:textSize="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        tools:ignore="SpUsage"
+        android:layout_centerVertical="true"
+        android:layout_alignStart="@+id/gestureWord"
+        android:layout_alignEnd="@+id/gestureWord" />
+
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/gestureName"
+        android:hint="Enter a Gesture Name"
+        android:layout_marginTop="45dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:id="@+id/start"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="120dp"
+        android:layout_alignEnd="@+id/switchMode"
+        android:layout_alignStart="@+id/switchMode" />
+
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switchMode"
+        android:layout_marginBottom="49dp"
+        android:checked="true"
+        android:text="Test"
+        android:textOn="Test"
+        android:textOff="Train"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/gestureWord"
+        android:layout_below="@+id/gestureName"
+        android:layout_alignStart="@+id/gestureName"
+        android:hint="Enter the Gesture Word"
+        android:layout_alignEnd="@+id/gestureName" />
+
+</RelativeLayout>
