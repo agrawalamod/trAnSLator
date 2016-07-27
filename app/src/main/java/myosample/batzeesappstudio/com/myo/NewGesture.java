@@ -62,11 +62,11 @@ public class NewGesture {
         }*/
 
 
-        String trainFile1="C:\\data\\Trained\\train_hungry1.csv";
+        /*String trainFile1="C:\\data\\Trained\\train_hungry1.csv";
         String trainFile2="C:\\data\\Trained\\train_working1.csv";
         String trainFile3="C:\\data\\Trained\\train_hi1.csv";
         String trainFile4="C:\\data\\Trained\\train_good1.csv";
-        String testFile1="C:\\data\\Trained\\train_good2.csv";
+        String testFile1="C:\\data\\Trained\\train_good2.csv";*/
 
 
 
@@ -97,6 +97,7 @@ public class NewGesture {
         //train1.normalize();
         //train2.normalize();
         //train3.normalize();
+        //train4.normalize();
         //test1.normalize();
         dtwScore[0]=runDTW(train1, test1);
         dtwScore[1]=runDTW(train2, test1);
@@ -168,7 +169,7 @@ public class NewGesture {
         double summean=0;
         double sumstd=0;
         double sumpeak=0;
-        for(int i=0;i<7;i++){
+        for(int i=0;i<6;i++){
             double meanDiff=Math.abs( train.get(i).getMean()-test.get(i).getMean());
             double stdDev=Math.abs(train.get(i).getStdDev()-test.get(i).getStdDev());
             double diffPeak=Math.abs(train.get(i).getPeakDiff()-test.get(i).getPeakDiff());

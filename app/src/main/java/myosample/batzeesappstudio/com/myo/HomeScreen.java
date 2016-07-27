@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -38,7 +39,13 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
+import android.os.Handler;
+
 import com.dtw.FastDtwTest;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import ai.api.AIConfiguration;
 import ai.api.AIDataService;
@@ -55,6 +62,8 @@ public class HomeScreen extends Activity {
     private EditText gestureName;
     private EditText gestureWord;
     private TextView state;
+    TextToSpeech t1;
+
     State currState;
     ArrayList<String> bufferedData;
     ArrayList<String> writeBuffer;
@@ -63,9 +72,17 @@ public class HomeScreen extends Activity {
     String filename;
     AIDataService aiDataService;
     AIRequest aiRequest;
+    TestQueue queue;
 
     boolean isRecording = false;
     boolean isConnected = false;
+
+    boolean prevIntertialStatus=false;
+    private long counter=0;
+    String msg;
+    String word;
+    String answer;
+
 
     String ACCESS_TOKEN = "e652d27c3ebb48c5925cb0094c6d192d";
 
@@ -143,6 +160,14 @@ public class HomeScreen extends Activity {
                 roll *= -1;
                 pitch *= -1;
             }
+
+
+            if(switchMode.isChecked())
+            {
+                queue.addDataQueue(x,y,z,w,roll,pitch,yaw,currState.pose);
+
+            }
+
             if(isRecording == true) {
 
                 currState.roll = roll;
@@ -153,7 +178,7 @@ public class HomeScreen extends Activity {
                 currState.z = z;
                 currState.w = w;
 
-                String data = currState.x + ", " + currState.y + "," + currState.z + "," + currState.w + "," + currState.roll + "," + currState.pitch + "," + currState.yaw + "," + currState.pose;
+                String data = currState.x + ", " + currState.y + "," + currState.z + "," + currState.w + "," + currState.roll + "," + currState.pitch + "," + currState.yaw;
 
                 if (count == 100) {
                     count = 0;
@@ -168,6 +193,7 @@ public class HomeScreen extends Activity {
 
                 }
                 count++;
+
             }
 
 
@@ -175,6 +201,7 @@ public class HomeScreen extends Activity {
             //mTextView.setRotation(roll);
             //mTextView.setRotationX(pitch);
             //mTextView.setRotationY(yaw);
+            triggerGestureRecognition();
 
         }
 
@@ -255,8 +282,10 @@ public class HomeScreen extends Activity {
         switchMode = (ToggleButton) findViewById(R.id.switchMode);
         gestureName = (EditText) findViewById(R.id.gestureName);
 
+
         gestureWord = (EditText) findViewById(R.id.gestureWord);
         isRecording = false;
+        queue = new TestQueue();
         Log.v("OnCreate Switch", ""+switchMode.isChecked());
 
         File root = android.os.Environment.getExternalStorageDirectory();
@@ -405,8 +434,56 @@ public class HomeScreen extends Activity {
                             FastDtwTest.DTW(f.getAbsolutePath(),dir.getAbsolutePath()+ File.separator+filename,true);
                         }*/
 
+
+
                         NewGesture newGesture = new NewGesture();
-                        newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+                        int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+
+                        switch(gesture_no)
+                        {
+                            case 0:
+                                word = "i hunger";
+                                break;
+                            case 1:
+                                word= "i working";
+                                break;
+                            case 2:
+                                word = "hi";
+                                break;
+                            case 3:
+                                word = "soundsGood";
+                                break;
+                            case 4:
+                                word = "howYouDoin";
+                                break;
+                        }
+
+
+                        aiRequest.setQuery(word);
+                        new AsyncTask<AIRequest, Void, AIResponse>() {
+                            @Override
+                            protected AIResponse doInBackground(AIRequest... requests) {
+                                final AIRequest request = requests[0];
+                                try {
+                                    final AIResponse response = aiDataService.request(aiRequest);
+                                    return response;
+                                } catch (AIServiceException e) {
+                                }
+                                return null;
+                            }
+                            @Override
+                            protected void onPostExecute(AIResponse aiResponse) {
+                                if (aiResponse != null) {
+                                    // process aiResponse here
+                                    Log.v("Result!!!",aiResponse.getResult().getFulfillment().getSpeech());
+                                    answer = aiResponse.getResult().getFulfillment().getSpeech();
+                                    TTS(answer);
+
+
+
+                                }
+                            }
+                        }.execute(aiRequest);
                         //Call DTW
                     }
 
@@ -442,25 +519,22 @@ public class HomeScreen extends Activity {
         aiDataService = new AIDataService(this,config);
         aiRequest = new AIRequest();
 
-        aiRequest.setQuery("soundsGood");
-        new AsyncTask<AIRequest, Void, AIResponse>() {
+
+
+        t1=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
-            protected AIResponse doInBackground(AIRequest... requests) {
-                final AIRequest request = requests[0];
-                try {
-                    final AIResponse response = aiDataService.request(aiRequest);
-                    return response;
-                } catch (AIServiceException e) {
-                }
-                return null;
-            }
-            @Override
-            protected void onPostExecute(AIResponse aiResponse) {
-                if (aiResponse != null) {
-                    // process aiResponse here
+            public void onInit(int status) {
+                if(status == TextToSpeech.SUCCESS) {
+                    Log.i("TextToSpeech","Initializaed");
+                    t1.setLanguage(Locale.UK);
+                    t1.setSpeechRate((float)0.7);
+                    //Log.i("TTS",t1.getVoices().toString());
+                    //Log.i("TTS",Boolean.toString(flag));
                 }
             }
-        }.execute(aiRequest);
+        });
+
+        //TTS("Hey, how are you?");
 
 
     }
@@ -662,5 +736,199 @@ public class HomeScreen extends Activity {
         }
 
     }
+    public void triggerGestureRecognition(){
+        if(prevIntertialStatus==false && queue.isInertial==true){
+            counter=1;
+            //startGestureRecognition();
+        }else if(prevIntertialStatus==true && queue.isInertial==true){
+            counter++;
+        }else if(prevIntertialStatus==true && queue.isInertial==false){
+            Log.v("HomeScreen","Callng Gesture");
+            //recognizeGesture();
+        }
+        prevIntertialStatus=queue.isInertial;
+    }
+    public void recognizeGesture(){
+
+        //Stop Recording
+        isRecording = false;
+        start.setText("Start");
+        Log.v("Logging Data", "Stopped Recording");
+
+
+        if(!switchMode.isChecked())
+        {
+            //Stopped after Training
+            Log.v("Data Logging", "Stopped after training");
+            File root = android.os.Environment.getExternalStorageDirectory();
+            dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+            File lastModified = lastFileModified(dir.getAbsolutePath());
+
+
+            // Take average
+            CSVNormalizer csv = new CSVNormalizer();
+            try {
+                csv.readCSV(lastModified);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            csv.normalize();
+            String filename = lastModified.getName();
+            Log.v("Last Modified", filename);
+            File newDir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained");
+            csv.writeData(newDir.getAbsolutePath(),filename);
+
+            Log.v("Training", "Trained");
+
+        }
+        else
+        {
+
+            Log.v("Data Logging", "Stopped after testing");
+            File root = android.os.Environment.getExternalStorageDirectory();
+            dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+
+            // Take average
+            File lastModified = lastFileModified(dir.getAbsolutePath());
+
+            CSVNormalizer csv = new CSVNormalizer();
+            try {
+                csv.readCSV(lastModified);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            csv.normalize();
+            String filename = lastModified.getName();
+            dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
+            truncateSDFile(dir.getAbsolutePath(),filename);
+            csv.writeData(dir.getAbsolutePath(),filename);
+
+
+
+
+            //Stopped after Testing
+
+
+                        /*File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained").listFiles();
+                        for(File f: trainedFiles)
+                        {
+                            Log.v("Testing", ""+f.getAbsolutePath());
+                            FastDtwTest.DTW(f.getAbsolutePath(),dir.getAbsolutePath()+ File.separator+filename,true);
+                        }*/
+
+            NewGesture newGesture = new NewGesture();
+            int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+
+            switch(gesture_no)
+            {
+                case 0:
+                    word = "i hunger";
+                    break;
+                case 1:
+                    word= "i working";
+                    break;
+                case 2:
+                    word = "hi";
+                    break;
+                case 3:
+                    word = "soundsGood";
+                    break;
+            }
+
+
+            aiRequest.setQuery(word);
+            new AsyncTask<AIRequest, Void, AIResponse>() {
+                @Override
+                protected AIResponse doInBackground(AIRequest... requests) {
+                    final AIRequest request = requests[0];
+                    try {
+                        final AIResponse response = aiDataService.request(aiRequest);
+                        return response;
+                    } catch (AIServiceException e) {
+                    }
+                    return null;
+                }
+                @Override
+                protected void onPostExecute(AIResponse aiResponse) {
+                    if (aiResponse != null) {
+                        // process aiResponse here
+                        Log.v("Result!!!",aiResponse.getResult().getFulfillment().getSpeech());
+                        answer = aiResponse.getResult().getFulfillment().getSpeech();
+                        TTS(answer);
+
+
+
+                    }
+                }
+            }.execute(aiRequest);
+
+
+            //Call DTW
+        }
+
+
+    }
+    public void startGestureRecognition(){
+
+        if(!switchMode.isChecked())
+        {
+            //Start Recording in Training Mode
+
+            String gesture = gestureName.getText().toString();
+            String word = gestureWord.getText().toString();
+            filename = "train" + "_" + gesture + word + "_" + getFileName();
+
+        }
+        else
+        {
+            //Start Recording in Test Mode
+            filename = "test_" + getFileName();
+
+        }
+        isRecording = true;
+        start.setText("Stop");
+        Log.v("Data Logging", "Started Recording");
+
+    }
+
+
+    private Runnable audioRunnable = new Runnable() {
+        @Override
+        public void run() {
+            //while (flag)
+            {
+                String toSpeak = msg;
+
+                Toast.makeText(getApplicationContext(), toSpeak, Toast.LENGTH_SHORT).show();
+                t1.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null);
+
+                /*try {
+                    String toSpeak = msg;
+                    Toast.makeText(getApplicationContext(), toSpeak, Toast.LENGTH_SHORT).show();
+                    t1.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null);
+                    HashMap<String,String> myHashRender = new HashMap();
+                    myHashRender.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID,msg);
+                    File root = android.os.Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    //File newFile = new File(root.getAbsolutePath() + File.separator + "torqueDumps" + File.separator  + System.currentTimeMillis() + "-audio" + ".mp3");
+                    int abc = t1.synthesizeToFile(msg,myHashRender,getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getPath()+System.currentTimeMillis()+".mp3");
+                    //int abc = t1.synthesizeToFile(msg,myHashRender,newFile.toString());
+                    Log.i("TTS",getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getPath());
+                    Thread.sleep(20000);
+                    flag = false;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }*/
+            }
+        }
+    };
+    public void TTS(String arg)
+    {
+        msg = arg;
+        Handler myHandler = new Handler();
+        myHandler.postDelayed(audioRunnable,200);
+
+    }
+
+
 }
 
