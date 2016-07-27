@@ -40,6 +40,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import com.dtw.FastDtwTest;
 
+import ai.api.AIConfiguration;
+import ai.api.AIDataService;
+import ai.api.AIServiceException;
+import ai.api.model.AIRequest;
+import ai.api.model.AIResponse;
+
 public class HomeScreen extends Activity {
 
 
@@ -55,9 +61,13 @@ public class HomeScreen extends Activity {
     int count =0;
     File dir;
     String filename;
+    AIDataService aiDataService;
+    AIRequest aiRequest;
 
     boolean isRecording = false;
     boolean isConnected = false;
+
+    String ACCESS_TOKEN = "e652d27c3ebb48c5925cb0094c6d192d";
 
     // Classes that inherit from AbstractDeviceListener can be used to receive events from Myo devices.
     // If you do not override an event, the default behavior is to do nothing.
@@ -425,8 +435,55 @@ public class HomeScreen extends Activity {
         Log.v("Myo", "Listener added");
         setLockPolicy();
 
+        final AIConfiguration config = new AIConfiguration(ACCESS_TOKEN,
+                AIConfiguration.SupportedLanguages.English,
+                AIConfiguration.RecognitionEngine.System);
+
+        aiDataService = new AIDataService(this,config);
+        aiRequest = new AIRequest();
+
+        aiRequest.setQuery("soundsGood");
+        new AsyncTask<AIRequest, Void, AIResponse>() {
+            @Override
+            protected AIResponse doInBackground(AIRequest... requests) {
+                final AIRequest request = requests[0];
+                try {
+                    final AIResponse response = aiDataService.request(aiRequest);
+                    return response;
+                } catch (AIServiceException e) {
+                }
+                return null;
+            }
+            @Override
+            protected void onPostExecute(AIResponse aiResponse) {
+                if (aiResponse != null) {
+                    // process aiResponse here
+                }
+            }
+        }.execute(aiRequest);
 
 
+    }
+
+    private class ApiAi extends AsyncTask<AIRequest, Void, AIResponse>
+    {
+        @Override
+        protected AIResponse doInBackground(AIRequest... requests) {
+            final AIRequest request = requests[0];
+            try {
+                final AIResponse response = aiDataService.request(aiRequest);
+                return response;
+            } catch (AIServiceException e) {
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(AIResponse aiResponse) {
+            if (aiResponse != null) {
+                // process aiResponse here
+                Log.v("Response", aiResponse.toString());
+            }
+        }
     }
     private void setLockPolicy() {
         Hub.getInstance().setLockingPolicy(Hub.LockingPolicy.NONE);
