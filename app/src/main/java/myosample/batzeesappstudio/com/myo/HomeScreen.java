@@ -353,7 +353,7 @@ public class HomeScreen extends Activity {
 
                         String gesture = gestureName.getText().toString();
                         String word = gestureWord.getText().toString();
-                        filename = "train" + "_" + gesture + word + "_" + getFileName();
+                        filename = "train" + "_" + gesture + "_" +  word + "_" + getFileName();
 
                     }
                     else
@@ -380,7 +380,11 @@ public class HomeScreen extends Activity {
                         Log.v("Data Logging", "Stopped after training");
                         File root = android.os.Environment.getExternalStorageDirectory();
                         dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+                        //String gesturename = filename.split("_")[]
+
                         File lastModified = lastFileModified(dir.getAbsolutePath());
+
+
 
 
                         // Take average
@@ -437,7 +441,8 @@ public class HomeScreen extends Activity {
 
 
                         NewGesture newGesture = new NewGesture();
-                        int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+                        //int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+                        int gesture_no = newGesture.gestureDetection(new File(dir.getAbsolutePath(),filename));
 
                         switch(gesture_no)
                         {
@@ -817,7 +822,7 @@ public class HomeScreen extends Activity {
                         }*/
 
             NewGesture newGesture = new NewGesture();
-            int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+            int gesture_no = newGesture.gestureDetection(new File(dir.getAbsolutePath(),filename));
 
             switch(gesture_no)
             {

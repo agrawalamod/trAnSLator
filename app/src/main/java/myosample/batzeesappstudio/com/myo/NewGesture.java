@@ -15,8 +15,53 @@ import java.util.List;
  */
 public class NewGesture {
 
+    public int gestureDetection(File testFile){
+        int[] detectMatrix={-1,-1,-1,-1,-1,-1};
+        int detectedGesture=-1;
+        for(int i=0;i<6;i++){
+            String folderPath="Gesture"+i;
+            int id=detectGesture(testFile,folderPath);
+            detectMatrix[i]=id;
+            detectedGesture = Mode(detectMatrix);
 
-    public int detectGesture(File testFile)
+        }
+        return detectedGesture;
+
+
+
+    }
+
+    int Mode(int[] n){
+        int t = 0;
+        for(int i=0; i<n.length; i++){
+            for(int j=1; j<n.length-i; j++){
+                if(n[j-1] > n[j]){
+                    t = n[j-1];
+                    n[j-1] = n[j];
+                    n[j] = t;
+                }
+            }
+        }
+
+        int mode = n[0];
+        int temp = 1;
+        int temp2 = 1;
+        for(int i=1;i<n.length;i++){
+            if(n[i-1] == n[i]){
+                temp++;
+            }
+            else {
+                temp = 1;
+            }
+            if(temp >= temp2){
+                mode = n[i];
+                temp2 = temp;
+            }
+        }
+        return mode;
+    }
+
+    public int detectGesture(File testFile,String folder)
     {
         int[][] winMatrix={
                 {0,0,0,0},
@@ -24,7 +69,7 @@ public class NewGesture {
                 {0,0,0,0},
                 {0,0,0,0}
         };
-        double[] weightMatrix={0.12,0.16,0.42,0.3};
+        double[] weightMatrix={1.9,0.0,0.0,0.0};
         double[] dtwScore={0,0,0,0};
         double[] mean={0,0,0,0};
         double[] stddev={0,0,0,0};
@@ -54,7 +99,7 @@ public class NewGesture {
 		System.out.println("#### OPERATION COMPLETED SUCCESSFULLY ####");*/
 
         File root = android.os.Environment.getExternalStorageDirectory();
-        File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained").listFiles();
+        File[] trainedFiles = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Trained"+File.separator + folder).listFiles();
         /*for(File f: trainedFiles)
         {
             Log.v("Testing", ""+f.getAbsolutePath());
@@ -94,11 +139,11 @@ public class NewGesture {
         ArrayList<StatParameters> train3Param=train3.getFeatures();
         ArrayList<StatParameters> train4Param=train4.getFeatures();
         ArrayList<StatParameters> test1Param=test1.getFeatures();
-        //train1.normalize();
-        //train2.normalize();
-        //train3.normalize();
-        //train4.normalize();
-        //test1.normalize();
+        train1.normalize();
+        train2.normalize();
+        train3.normalize();
+        train4.normalize();
+        test1.normalize();
         dtwScore[0]=runDTW(train1, test1);
         dtwScore[1]=runDTW(train2, test1);
         dtwScore[2]=runDTW(train3, test1);
@@ -107,7 +152,7 @@ public class NewGesture {
         winMatrix[dtwIndex][0]=1;
 
 
-        //System.out.println("Gesture 1");
+
 
         StatParameters param1= displayFeatureDiff(train1Param, test1Param);
         StatParameters param2= displayFeatureDiff(train2Param, test1Param);
