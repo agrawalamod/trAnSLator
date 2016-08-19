@@ -12,7 +12,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by agrawalamod on 7/26/16.
@@ -28,6 +32,7 @@ public class CSVNormalizer {
     ArrayList<Double> pitch;
     ArrayList<Double> roll;
     ArrayList<String> pose;
+    Map<String, Integer> stringsCount;
 
     public CSVNormalizer()
     {
@@ -39,6 +44,8 @@ public class CSVNormalizer {
         pitch = new ArrayList<Double>();
         roll = new ArrayList<Double>();
         pose = new ArrayList<String>();
+
+        stringsCount = new HashMap<>();
 
     }
 
@@ -58,21 +65,75 @@ public class CSVNormalizer {
                 yaw.add(Double.parseDouble(RowData[4]));
                 pitch.add(Double.parseDouble(RowData[5]));
                 roll.add(Double.parseDouble(RowData[6]));
-                //pose.add(RowData[7]);
+                pose.add(RowData[7]);
 
             }
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             // handle exception
-        }
-        finally {
+        } finally {
             is.close();
         }
+    }
+    public String findMode()
+    {
+        for (String s: this.pose)
+        {
+            Integer c = stringsCount.get(s);
+            if(c == null) c = new Integer(0);
+            c++;
+            stringsCount.put(s,c);
+        }
+
+        Log.v("Strings Count", stringsCount.toString());
+        Map.Entry<String,Integer> mostRepeated = null;
+        for(Map.Entry<String, Integer> e: stringsCount.entrySet())
+        {
+            if(mostRepeated == null || mostRepeated.getValue()<e.getValue())
+                mostRepeated = e;
+        }
+        if(mostRepeated != null)
+        System.out.println("Most common string: " + mostRepeated.getKey());
+
+        return mostRepeated.getKey();
+    }
+
+    public List findMode2()
+    {
+        for (String s: this.pose)
+        {
+            Integer c = stringsCount.get(s);
+            if(c == null) c = new Integer(0);
+            c++;
+            stringsCount.put(s,c);
+        }
+
+
+        Set<Map.Entry<String, Integer>> set = stringsCount.entrySet();
+
+        List<Map.Entry<String, Integer>> list = new ArrayList<Map.Entry<String, Integer>>(
+                set);
+
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
+
+            @Override
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+
+                return o2.getValue().compareTo(o1.getValue());
+            }
+
+        });
+        System.out.println(list.subList(0, 2));
+
+        return list.subList(0,2);
 
     }
 
-    public void normalize()
-    {
+
+
+
+
+    public void normalize() {
         double xAvg = calculateAverage(x);
         double yAvg = calculateAverage(y);
         double zAvg = calculateAverage(z);
@@ -86,14 +147,11 @@ public class CSVNormalizer {
             y.set(i, y.get(i) - yAvg);
             z.set(i, z.get(i) - zAvg);
             w.set(i, w.get(i) - wAvg);
-            yaw.set(i, (yaw.get(i) - yawAvg)/500);
-            pitch.set(i, (pitch.get(i) - pitchAvg)/500);
-            roll.set(i, (roll.get(i) - rollAvg)/500);
+            yaw.set(i, (yaw.get(i) - yawAvg) / 500);
+            pitch.set(i, (pitch.get(i) - pitchAvg) / 500);
+            roll.set(i, (roll.get(i) - rollAvg) / 500);
         }
-
-
     }
-
     public void writeData(String path, String filename)
     {
         File root = android.os.Environment.getExternalStorageDirectory();

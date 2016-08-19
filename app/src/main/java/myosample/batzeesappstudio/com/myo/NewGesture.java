@@ -266,4 +266,6 @@ public class NewGesture {
             return 3;
         }
     }
+
+
 }

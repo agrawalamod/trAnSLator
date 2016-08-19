@@ -39,6 +39,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import android.os.Handler;
 
@@ -84,7 +85,7 @@ public class HomeScreen extends Activity {
     String answer;
 
 
-    String ACCESS_TOKEN = "e652d27c3ebb48c5925cb0094c6d192d";
+    String ACCESS_TOKEN = "0400727d47564f1a9b279aca7e84fbc0";
 
     // Classes that inherit from AbstractDeviceListener can be used to receive events from Myo devices.
     // If you do not override an event, the default behavior is to do nothing.
@@ -178,7 +179,7 @@ public class HomeScreen extends Activity {
                 currState.z = z;
                 currState.w = w;
 
-                String data = currState.x + ", " + currState.y + "," + currState.z + "," + currState.w + "," + currState.roll + "," + currState.pitch + "," + currState.yaw;
+                String data = currState.x + ", " + currState.y + "," + currState.z + "," + currState.w + "," + currState.roll + "," + currState.pitch + "," + currState.yaw + "," + currState.pose;
 
                 if (count == 100) {
                     count = 0;
@@ -218,17 +219,20 @@ public class HomeScreen extends Activity {
                 case REST:
                 case DOUBLE_TAP:
                     int restTextId = R.string.hello_world;
+
                     switch (myo.getArm()) {
                         case LEFT:
                             restTextId = R.string.arm_left;
-                            currState.pose = "Left_DoubleTap";
+                            //currState.pose = "Left_DoubleTap";
+                            //mTextView.setText("Double Tap");
                             break;
                         case RIGHT:
                             restTextId = R.string.arm_right;
-                            currState.pose = "Right_DoubleTap";
+                            //currState.pose = "Right_DoubleTap";
+                            //mTextView.setText("Double Tap");
                             break;
                     }
-                    mTextView.setText(getString(restTextId));
+                    //mTextView.setText("Double Tap");
                     break;
                 case FIST:
                     mTextView.setText(getString(R.string.pose_fist));
@@ -353,13 +357,15 @@ public class HomeScreen extends Activity {
 
                         String gesture = gestureName.getText().toString();
                         String word = gestureWord.getText().toString();
-                        filename = "train" + "_" + gesture + word + "_" + getFileName();
+                        filename = "train" + "_" + gesture + "_" +  word + "_" + getFileName();
 
                     }
                     else
                     {
                         //Start Recording in Test Mode
                         filename = "test_" + getFileName();
+
+                        new AutomaticStop().execute();
 
                     }
                     isRecording = true;
@@ -380,7 +386,11 @@ public class HomeScreen extends Activity {
                         Log.v("Data Logging", "Stopped after training");
                         File root = android.os.Environment.getExternalStorageDirectory();
                         dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Training");
+                        //String gesturename = filename.split("_")[]
+
                         File lastModified = lastFileModified(dir.getAbsolutePath());
+
+
 
 
                         // Take average
@@ -415,7 +425,11 @@ public class HomeScreen extends Activity {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                        csv.normalize();
+                        //csv.normalize();
+                        //String pose = csv.findMode();
+                        List pose = csv.findMode2();
+
+                        //Log.v("Mode Pose",pose);
                         String filename = lastModified.getName();
                         dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
                         truncateSDFile(dir.getAbsolutePath(),filename);
@@ -436,28 +450,28 @@ public class HomeScreen extends Activity {
 
 
 
-                        NewGesture newGesture = new NewGesture();
-                        int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+                        /*NewGesture newGesture = new NewGesture();
+                        //int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+                        //int gesture_no = newGesture.gestureDetection(new File(dir.getAbsolutePath(),filename));*/
+                        word = "sorry";
+                        String ges1, ges2;
+                        if(pose.size() >1) {
 
-                        switch(gesture_no)
-                        {
-                            case 0:
-                                word = "i hunger";
-                                break;
-                            case 1:
-                                word= "i working";
-                                break;
-                            case 2:
-                                word = "hi";
-                                break;
-                            case 3:
-                                word = "soundsGood";
-                                break;
-                            case 4:
+                            ges1 = pose.get(0).toString().split("=")[0];
+                            ges2 = pose.get(1).toString().split("=")[0];
+
+
+                            if ((ges1.equals("Fist") && ges2.equals("FingersSpread") || (ges1.equals("FingersSpread") && ges2.equals("Fist")))) {
+                                word = "helloMyo";
+
+
+                            }
+
+                            if ((ges1.equals("WaveOut") && ges2.equals("WaveIn") || (ges1.equals("WaveIn") && ges2.equals("WaveOut")))) {
                                 word = "howYouDoin";
-                                break;
-                        }
 
+                            }
+                        }
 
                         aiRequest.setQuery(word);
                         new AsyncTask<AIRequest, Void, AIResponse>() {
@@ -797,7 +811,11 @@ public class HomeScreen extends Activity {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            csv.normalize();
+
+            //csv.normalize();
+
+            String pose = csv.findMode();
+            Log.v("Mode Pose",pose);
             String filename = lastModified.getName();
             dir = new File (root.getAbsolutePath() + File.separator + "MYO" + File.separator + "Test");
             truncateSDFile(dir.getAbsolutePath(),filename);
@@ -816,22 +834,25 @@ public class HomeScreen extends Activity {
                             FastDtwTest.DTW(f.getAbsolutePath(),dir.getAbsolutePath()+ File.separator+filename,true);
                         }*/
 
-            NewGesture newGesture = new NewGesture();
-            int gesture_no = newGesture.detectGesture(new File(dir.getAbsolutePath(),filename));
+            /*NewGesture newGesture = new NewGesture();
+            int gesture_no = newGesture.gestureDetection(new File(dir.getAbsolutePath(),filename));*/
 
-            switch(gesture_no)
+            switch(pose)
             {
-                case 0:
-                    word = "i hunger";
+                case "Fist":
+                    word = "time";
                     break;
-                case 1:
-                    word= "i working";
+                case "FingersSpread":
+                    word= "weather in bangalore in celsius";
                     break;
-                case 2:
-                    word = "hi";
+                case "Right_DoubleTap":
+                    word = "youSpeak";
                     break;
-                case 3:
-                    word = "soundsGood";
+                case "WaveOut":
+                    word = "letsGoOut";
+                    break;
+                case "WaveIn":
+                    word = "letsGoIn";
                     break;
             }
 
@@ -927,6 +948,28 @@ public class HomeScreen extends Activity {
         Handler myHandler = new Handler();
         myHandler.postDelayed(audioRunnable,200);
 
+    }
+
+    private class AutomaticStop extends AsyncTask<Void, Void, Void>
+    {
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            //super.onPostExecute(aVoid);
+            Log.v("SensorService", "Data logged");
+            start.performClick();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            //Log.v("SensorService", "Size of write buffer: " + writeBuffer.size());
+            try {
+                Thread.currentThread().sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
+
+        }
     }
 
 
